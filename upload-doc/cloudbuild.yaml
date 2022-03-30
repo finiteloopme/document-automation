@@ -1,0 +1,42 @@
+steps:
+  - name: golang:1.17
+    entrypoint: /bin/bash
+    args:
+      - -c
+      - |
+        ls -al
+  # Run tests and save to file
+  - name: golang:1.17
+    entrypoint: /bin/bash
+    args: 
+      - -c
+      - |
+        go get -u github.com/jstemmer/go-junit-report
+        2>&1 go test -timeout 1m -v ./... | tee sponge.log
+        /go/bin/go-junit-report -set-exit-code < sponge.log > ${BUILD_ID}_test_log.xml
+
+  # Docker Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 
+           '${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_REPO_NAME}/${_SERVICE_NAME}:${BUILD_ID}', '.']
+
+  # Docker push to Google Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_REPO_NAME}/${_SERVICE_NAME}:${BUILD_ID}']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['run', 'deploy', '${_SERVICE_NAME}-${BUILD_ID}', 
+           '--image=${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_REPO_NAME}/${_SERVICE_NAME}:${BUILD_ID}', 
+           '--allow-unauthenticated',
+           '--region', '${_GCP_REGION}', '--platform', 'managed']
+
+# Save test logs to Google Cloud Storage
+artifacts:
+  objects:
+    location: gs://$_BUCKET_NAME/
+    paths:
+      - ${BUILD_ID}_test_log.xml
+# Store images in Google Artifact Registry
+images:
+  - ${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_REPO_NAME}/${_SERVICE_NAME}:${BUILD_ID}
