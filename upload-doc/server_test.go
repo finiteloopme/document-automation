@@ -66,3 +66,8 @@ func TestHandleFileUpload(t *testing.T) {
 		t.Errorf("Returned wrong message. Got %v, was expecting %v", rr.Body.String(), expectedMsg)
 	}
 }
+
+func TestPersistDocument(t *testing.T) {
+	//TODO: implement unit test
+	// Consider use of https://pkg.go.dev/cloud.google.com/go/pubsub/pstest
+}

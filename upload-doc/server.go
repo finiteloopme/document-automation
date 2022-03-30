@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	log "github.com/finiteloopme/goutils/pkg/log"
+	os "github.com/finiteloopme/goutils/pkg/os"
+
+	"cloud.google.com/go/pubsub"
 )
 
 func StartServer(hostname, port, serviceName string) {
@@ -37,12 +41,31 @@ func HandleFileUpload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Check if the runtime is GCP
+	// if ReadEnvVarOptional("GOOGLE_CLOUD_PROJECT") != "" {
+	if os.ReadEnvVarOptional("GOOGLE_CLOUD_PROJECT") != "" {
+		// Runtime is GCP
+		log.Info("Persisting the document...")
+		go PersistDocument(content)
+	}
 	fmt.Fprint(w, fmt.Sprint(len(content)))
 	log.Info(string(content))
 	log.Debug("Done processing FileUpload request")
 }
 
 func PersistDocument(content []byte) {
-	// ctx := context.Background()
-	// client, err := pubsub.NewClient(ctx)
+	pubsubTopic := os.ReadEnvVar("PUBSUB_TOPIC")
+	ctx := context.Background()
+	client, err := pubsub.NewClient(ctx, os.ReadEnvVar("GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	topic := client.Topic(pubsubTopic)
+
+	if _, err := topic.Publish(ctx, &pubsub.Message{
+		Data: content,
+	}).Get(ctx); err != nil {
+		log.Fatal(err)
+	}
+	log.Info("Document persisted")
 }

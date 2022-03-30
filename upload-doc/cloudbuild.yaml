@@ -29,6 +29,7 @@ steps:
     args: ['run', 'deploy', '${_SERVICE_NAME}-${BUILD_ID}', 
            '--image=${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_REPO_NAME}/${_SERVICE_NAME}:${BUILD_ID}', 
            '--allow-unauthenticated',
+           '--set-env-vars=PUBSUB_TOPIC=${_PUBSUB_TOPIC}',
            '--region', '${_GCP_REGION}', '--platform', 'managed']
 
 # Save test logs to Google Cloud Storage
