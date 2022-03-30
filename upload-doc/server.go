@@ -37,7 +37,7 @@ func HandleFileUpload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintf(w, fmt.Sprint(len(content)))
+	fmt.Fprint(w, fmt.Sprint(len(content)))
 	log.Info(string(content))
 	log.Debug("Done processing FileUpload request")
 }
