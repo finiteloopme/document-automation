@@ -71,3 +71,36 @@ func TestPersistDocument(t *testing.T) {
 	//TODO: implement unit test
 	// Consider use of https://pkg.go.dev/cloud.google.com/go/pubsub/pstest
 }
+
+func TestProcessDocument(t *testing.T) {
+	fileReader, err := os.Open("./data/au_notice_of_assessment_sample.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fileReader.Close()
+
+	content, err := ioutil.ReadAll(fileReader)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create a FileUpload request
+	req, err := http.NewRequest("POST", "/process", bytes.NewBuffer(content))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(ProcessDocument)
+
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("returned wrong status code.  Got %v, was expecting %v", status, http.StatusOK)
+	}
+
+	// expectedMsg := fmt.Sprint(len(content))
+	// if rr.Body.String() != expectedMsg {
+	// 	t.Errorf("Returned wrong message. Got %v, was expecting %v", rr.Body.String(), expectedMsg)
+	// }
+
+}
